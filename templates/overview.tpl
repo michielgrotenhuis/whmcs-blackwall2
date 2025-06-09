@@ -121,7 +121,7 @@
                 <div class="card">
                     <div class="card-header">
                         <ul class="nav nav-tabs card-header-tabs" id="blackwall-tabs" role="tablist">
-                            {if $api_key && !$simplified_mode}
+                            {if $api_key}
                                 <li class="nav-item" role="presentation">
                                     <button class="nav-link active" id="statistics-tab" data-bs-toggle="tab" data-bs-target="#statistics" type="button" role="tab">
                                         <i class="fas fa-chart-bar me-2"></i>Statistics
@@ -139,7 +139,7 @@
                                 </li>
                             {/if}
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link {if $simplified_mode || !$api_key}active{/if}" id="setup-tab" data-bs-toggle="tab" data-bs-target="#setup" type="button" role="tab">
+                                <button class="nav-link {if !$api_key}active{/if}" id="setup-tab" data-bs-toggle="tab" data-bs-target="#setup" type="button" role="tab">
                                     <i class="fas fa-wrench me-2"></i>Setup Instructions
                                 </button>
                             </li>
@@ -153,7 +153,7 @@
                     <div class="card-body p-0">
                         <div class="tab-content" id="blackwall-tab-content">
                             {* Statistics Tab (only if API key available) *}
-                            {if $api_key && !$simplified_mode}
+                            {if $api_key}
                                 <div class="tab-pane fade show active" id="statistics" role="tabpanel">
                                     <div class="iframe-container">
                                         <div class="iframe-header">
@@ -214,7 +214,7 @@
                             {/if}
 
                             {* Setup Tab *}
-                            <div class="tab-pane fade {if $simplified_mode || !$api_key}show active{/if}" id="setup" role="tabpanel">
+                            <div class="tab-pane fade {if !$api_key}show active{/if}" id="setup" role="tabpanel">
                                 <div class="p-4">
                                     {if $dns_status && $dns_status.status}
                                         {* DNS is configured correctly *}
@@ -225,7 +225,7 @@
 
                                         <h6>What's Next?</h6>
                                         <ul>
-                                            {if $api_key && !$simplified_mode}
+                                            {if $api_key}
                                                 <li>View real-time protection statistics in the <strong>Statistics</strong> tab</li>
                                                 <li>Monitor blocked threats in the <strong>Events Log</strong> tab</li>
                                                 <li>Customize protection rules in the <strong>Settings</strong> tab</li>
