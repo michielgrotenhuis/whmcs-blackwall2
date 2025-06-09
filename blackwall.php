@@ -598,8 +598,6 @@ function blackwall_AdminCustomButtonArray() {
         'Sync Status' => 'syncStatus',
         'Check DNS' => 'checkDns',
         'Check GateKeeper' => 'checkGateKeeper',
-        'Manual GateKeeper Test' => 'manualGateKeeperTest',
-        'Debug Account Creation' => 'debugAccountCreation',
         'Test Simplified Creation' => 'testSimplifiedCreation',
         'View Debug Logs' => 'viewDebugLogs',
         'Clear Debug Logs' => 'clearDebugLogs',
@@ -670,9 +668,10 @@ function blackwall_checkModuleVersion(array $params) {
     $version_info = [
         'module_file' => __FILE__,
         'has_debug_logger' => class_exists('BlackwallDebugLogger'),
-        'createaccount_method' => 'UPDATED_NO_SUBACCOUNTS',
+        'createaccount_method' => 'NO_SUBACCOUNTS_CLEAN_V4',
         'timestamp' => date('Y-m-d H:i:s'),
         'php_version' => PHP_VERSION,
+        'subaccount_functions_removed' => true,
         'function_exists' => [
             'blackwall_CreateAccount' => function_exists('blackwall_CreateAccount'),
             'blackwall_viewDebugLogs' => function_exists('blackwall_viewDebugLogs'),
