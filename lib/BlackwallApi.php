@@ -1,332 +1,26 @@
+<?php
 /**
-     * Create subaccount in BotGuard
-     */
-    public function createSubaccount(array $user_data): array {
-        if (empty($user_data['email'])) {
-            throw new InvalidArgumentException('Email is required for subaccount creation');
-        }
-        
-        $result = $this->doRequest('POST', '/user', $user_data);
-        
-        if (!$result) {
-            throw new Exception('Subaccount creation error. Please try again.');
-        }
-        
-        if (is_object($result) && property_exists($result, 'status') && $result->status === 'error') {
-            throw new Exception($result->message ?? 'Subaccount creation failed');
-        }
-        
-        return (array) $result;
-    }
-    
-    /**
-     * Get subaccounts from BotGuard
-     */
-    public function getSubaccounts(array $filter = []): array {
-        try {
-            $result = $this->doRequest('GET', '/user', $filter);
-            
-            if (!$result) {
-                return [];
-            }
-            
-            if (is_object($result) && property_exists($result, 'status') && $result->status === 'error') {
-                // Return empty array for "not found" type errors
-                if (strpos($result->message ?? '', 'not found') !== false || 
-                    strpos($result->message ?? '', 'No users') !== false) {
-                    return [];
-                }
-                error_log("BotGuard getSubaccounts error: " . ($result->message ?? 'Unknown error'));
-                return [];
-            }
-            
-            return is_array($result) ? $result : [$result];
-        } catch (Exception $e) {
-            error_log("BotGuard getSubaccounts exception: " . $e->getMessage());
-            return [];
-        }
-    }
-    
-    /**
-     * Add domain to BotGuard
-     */
-    public function addDomain(string $domain, ?int $user_id = null): array {
-        $domain = trim($domain);
-        if (empty($domain)) {
-            throw new InvalidArgumentException('Domain name cannot be empty');
-        }
-        
-        $data = ['domain' => $domain];
-        
-        // Only add user if provided
-        if ($user_id !== null) {
-            $data['user'] = $user_id;
-        }
-        
-        // Debug logging
-        if (class_exists('BlackwallDebugLogger')) {
-            BlackwallDebugLogger::debug('BotGuard addDomain API call', [
-                'domain' => $domain,
-                'user_id' => $user_id,
-                'data' => $data
-            ]);
-        }
-        
-        $result = $this->doRequest('POST', '/website', $data);
-        
-        // Debug logging
-        if (class_exists('BlackwallDebugLogger')) {
-            BlackwallDebugLogger::debug('BotGuard addDomain API result', [
-                'result' => $result
-            ]);
-        }
-        
-        if (!$result) {
-            throw new Exception('Domain registration error. Please try again.');
-        }
-        
-        if (is_object($result) && property_exists($result, 'status') && $result->status === 'error') {
-            throw new Exception($result->message ?? 'Domain registration failed');
-        }
-        
-        return (array) $result;
-    }
-    
-    /**
-     * Update domain status in BotGuard
-     */
-    public function updateDomainStatus(string $domain, string $status): array {
-        $domain = trim($domain);
-        if (empty($domain)) {
-            throw new InvalidArgumentException('Domain name cannot be empty');
-        }
-        
-        $encoded_domain = urlencode($domain);
-        $result = $this->doRequest('PUT', "/website/{$encoded_domain}", [
-            'status' => $status
-        ]);
-        
-        if (!$result) {
-            throw new Exception('Domain status update error. Please try again.');
-        }
-        
-        if (is_object($result) && property_exists($result, 'status') && $result->status === 'error') {
-            throw new Exception($result->message ?? 'Domain status update failed');
-        }
-        
-        return (array) $result;
-    }
-    
-    /**
-     * Delete domain from BotGuard
-     */
-    public function deleteDomain(string $domain): array {
-        $domain = trim($domain);
-        if (empty($domain)) {
-            throw new InvalidArgumentException('Domain name cannot be empty');
-        }
-        
-        $encoded_domain = urlencode($domain);
-        $result = $this->doRequest('DELETE', "/website/{$encoded_domain}");
-        
-        if (!$result) {
-            throw new Exception('Domain deletion error. Please try again.');
-        }
-        
-        if (is_object($result) && property_exists($result, 'status') && $result->status === 'error') {
-            throw new Exception($result->message ?? 'Domain deletion failed');
-        }
-        
-        return (array) $result;
-    }
-    
-    /**
-     * Create user in GateKeeper
-     */
-    public function createGateKeeperUser(array $user_data): array {
-        // Validate required fields
-        if (empty($user_data['id'])) {
-            throw new InvalidArgumentException('User ID is required for GateKeeper user creation');
-        }
-        
-        // Convert user ID to string if it's numeric
-        if (is_numeric($user_data['id'])) {
-            $user_data['id'] = (string) $user_data['id'];
-        }
-        
-        // Convert tag array to comma-separated string if it's an array
-        if (isset($user_data['tag']) && is_array($user_data['tag'])) {
-            $user_data['tag'] = implode(',', $user_data['tag']);
-        }
-        
-        $result = $this->doGateKeeperRequest('POST', '/user', $user_data);
-        
-        // Handle specific GateKeeper responses
-        if (isset($result['status'])) {
-            if ($result['status'] === 'error') {
-                // Check if user already exists
-                if (strpos($result['message'] ?? '', 'already exists') !== false ||
-                    strpos($result['message'] ?? '', 'duplicate') !== false) {
-                    // User already exists, return success
-                    return ['status' => 'exists', 'message' => 'User already exists'];
-                }
-                throw new Exception($result['message'] ?? 'GateKeeper user creation failed');
-            }
-        }
-        
-        // Handle HTTP error responses
-        if (isset($result['code']) && $result['code'] >= 400) {
-            if (strpos($result['message'] ?? '', 'already exists') !== false ||
-                $result['code'] == 303) { // 303 means item already exists according to docs
-                return ['status' => 'exists', 'message' => 'User already exists'];
-            }
-            throw new Exception($result['message'] ?? 'GateKeeper user creation failed');
-        }
-        
-        return $result;
-    }
-    
-    /**
-     * Create website in GateKeeper
-     */
-    public function createGateKeeperWebsite(array $website_data): array {
-        // Validate required fields
-        if (empty($website_data['domain'])) {
-            throw new InvalidArgumentException('Domain is required for GateKeeper website creation');
-        }
-        
-        if (empty($website_data['user_id'])) {
-            throw new InvalidArgumentException('User ID is required for GateKeeper website creation');
-        }
-        
-        // Convert user_id to string if numeric
-        if (is_numeric($website_data['user_id'])) {
-            $website_data['user_id'] = (string) $website_data['user_id'];
-        }
-        
-        // Convert arrays to proper format for form encoding
-        $formatted_data = [
-            'domain' => $website_data['domain'],
-            'user_id' => $website_data['user_id'],
-            'status' => $website_data['status'] ?? 'setup'
-        ];
-        
-        // Handle arrays - convert to comma-separated strings for form encoding
-        if (isset($website_data['subdomain']) && is_array($website_data['subdomain'])) {
-            $formatted_data['subdomain'] = implode(',', $website_data['subdomain']);
-        }
-        
-        if (isset($website_data['ip']) && is_array($website_data['ip'])) {
-            $formatted_data['ip'] = implode(',', $website_data['ip']);
-        }
-        
-        if (isset($website_data['ipv6']) && is_array($website_data['ipv6'])) {
-            $formatted_data['ipv6'] = implode(',', $website_data['ipv6']);
-        }
-        
-        if (isset($website_data['tag']) && is_array($website_data['tag'])) {
-            $formatted_data['tag'] = implode(',', $website_data['tag']);
-        }
-        
-        // For settings, we might need to JSON encode them or handle differently
-        // Let's skip settings for now and add them later via update
-        
-        $result = $this->doGateKeeperRequest('POST', '/website', $formatted_data);
-        
-        // Handle specific GateKeeper responses
-        if (isset($result['status'])) {
-            if ($result['status'] === 'error') {
-                // Check if website already exists
-                if (strpos($result['message'] ?? '', 'already exists') !== false ||
-                    strpos($result['message'] ?? '', 'duplicate') !== false) {
-                    // Website already exists, try to update it instead
-                    return $this->updateGateKeeperWebsite($website_data['domain'], $formatted_data);
-                }
-                throw new Exception($result['message'] ?? 'GateKeeper website creation failed');
-            }
-        }
-        
-        // Handle HTTP error responses
-        if (isset($result['code']) && $result['code'] >= 400) {
-            if (strpos($result['message'] ?? '', 'already exists') !== false ||
-                $result['code'] == 303) { // 303 means item already exists
-                return $this->updateGateKeeperWebsite($website_data['domain'], $formatted_data);
-            }
-            throw new Exception($result['message'] ?? 'GateKeeper website creation failed with code: ' . $result['code']);
-        }
-        
-        return $result;
-    }
-    
-    /**
-     * Get website from GateKeeper
-     */
-    public function getGateKeeperWebsite(string $domain): array {
-        $encoded_domain = urlencode($domain);
-        $result = $this->doGateKeeperRequest('GET', "/website/{$encoded_domain}");
-        
-        if (isset($result['status']) && $result['status'] === 'error') {
-            throw new Exception($result['message'] ?? 'GateKeeper website retrieval failed');
-        }
-        
-        return $result;
-    }
-    
-    /**
-     * Update website in GateKeeper
-     */
-    public function updateGateKeeperWebsite(string $domain, array $website_data): array {
-        $encoded_domain = urlencode($domain);
-        $result = $this->doGateKeeperRequest('PUT', "/website/{$encoded_domain}", $website_data);
-        
-        if (isset($result['status']) && $result['status'] === 'error') {
-            throw new Exception($result['message'] ?? 'GateKeeper website update failed');
-        }
-        
-        return $result;
-    }
-    
-    /**
-     * Delete website from GateKeeper
-     */
-    public function deleteGateKeeperWebsite(string $domain): array {
-        $encoded_domain = urlencode($domain);
-        $result = $this->doGateKeeperRequest('DELETE', "/website/{$encoded_domain}");
-        
-        if (isset($result['status']) && $result['status'] === 'error') {
-            throw new Exception($result['message'] ?? 'GateKeeper website deletion failed');
-        }
-        
-        return $result;
-    }<?php
-/**
- * BlackwallApi - API client for BotGuard services (Simplified Mode)
+ * BlackwallApi - API client for BotGuard services
+ * Clean version without type declarations
  *
  * @author Zencommerce India
- * @version 2.1.0
+ * @version 2.2.1
  */
-
-declare(strict_types=1);
 
 class BlackwallApi {
     
-    private string $api_key;
-    private string $botguard_base_url = 'https://apiv2.botguard.net';
-    private int $timeout = 15; // Reduced timeout
+    private $api_key;
+    private $botguard_base_url = 'https://apiv2.botguard.net';
+    private $gatekeeper_base_url = 'https://api.blackwall.klikonline.nl:8443/v1.0';
+    private $timeout = 15;
     
-    /**
-     * Constructor
-     */
-    public function __construct(string $api_key) {
-        $this->api_key = $api_key; // Allow empty API key
+    public function __construct($api_key) {
+        $this->api_key = $api_key;
     }
     
-    /**
-     * Get all domains from BotGuard (SAFE MODE)
-     */
-    public function getDomains(): array {
+    public function getDomains() {
         if (empty($this->api_key)) {
-            return []; // Return empty array if no API key
+            return [];
         }
         
         try {
@@ -348,10 +42,7 @@ class BlackwallApi {
         }
     }
     
-    /**
-     * Get domain information from BotGuard (SAFE MODE)
-     */
-    public function getDomain(string $domain): array {
+    public function getDomain($domain) {
         if (empty($this->api_key)) {
             return [];
         }
@@ -381,11 +72,258 @@ class BlackwallApi {
         }
     }
     
-    /**
-     * Get A record IPs for a domain
-     */
-    public static function getDomainARecords(string $domain): array {
-        $default_ip = ['1.2.3.4']; // Generic fallback IP
+    public function createSubaccount($user_data) {
+        if (empty($user_data['email'])) {
+            throw new InvalidArgumentException('Email is required for subaccount creation');
+        }
+        
+        $result = $this->doRequest('POST', '/user', $user_data);
+        
+        if (!$result) {
+            throw new Exception('Subaccount creation error. Please try again.');
+        }
+        
+        if (is_object($result) && property_exists($result, 'status') && $result->status === 'error') {
+            throw new Exception($result->message ?? 'Subaccount creation failed');
+        }
+        
+        return (array) $result;
+    }
+    
+    public function getSubaccounts($filter = []) {
+        try {
+            $result = $this->doRequest('GET', '/user', $filter);
+            
+            if (!$result) {
+                return [];
+            }
+            
+            if (is_object($result) && property_exists($result, 'status') && $result->status === 'error') {
+                if (strpos($result->message ?? '', 'not found') !== false || 
+                    strpos($result->message ?? '', 'No users') !== false) {
+                    return [];
+                }
+                error_log("BotGuard getSubaccounts error: " . ($result->message ?? 'Unknown error'));
+                return [];
+            }
+            
+            return is_array($result) ? $result : [$result];
+        } catch (Exception $e) {
+            error_log("BotGuard getSubaccounts exception: " . $e->getMessage());
+            return [];
+        }
+    }
+    
+    public function addDomain($domain, $user_id = null) {
+        $domain = trim($domain);
+        if (empty($domain)) {
+            throw new InvalidArgumentException('Domain name cannot be empty');
+        }
+        
+        $data = ['domain' => $domain];
+        
+        if ($user_id !== null) {
+            $data['user'] = $user_id;
+        }
+        
+        if (class_exists('BlackwallDebugLogger')) {
+            BlackwallDebugLogger::debug('BotGuard addDomain API call', [
+                'domain' => $domain,
+                'user_id' => $user_id,
+                'data' => $data
+            ]);
+        }
+        
+        $result = $this->doRequest('POST', '/website', $data);
+        
+        if (class_exists('BlackwallDebugLogger')) {
+            BlackwallDebugLogger::debug('BotGuard addDomain API result', [
+                'result' => $result
+            ]);
+        }
+        
+        if (!$result) {
+            throw new Exception('Domain registration error. Please try again.');
+        }
+        
+        if (is_object($result) && property_exists($result, 'status') && $result->status === 'error') {
+            throw new Exception($result->message ?? 'Domain registration failed');
+        }
+        
+        return (array) $result;
+    }
+    
+    public function updateDomainStatus($domain, $status) {
+        $domain = trim($domain);
+        if (empty($domain)) {
+            throw new InvalidArgumentException('Domain name cannot be empty');
+        }
+        
+        $encoded_domain = urlencode($domain);
+        $result = $this->doRequest('PUT', "/website/{$encoded_domain}", [
+            'status' => $status
+        ]);
+        
+        if (!$result) {
+            throw new Exception('Domain status update error. Please try again.');
+        }
+        
+        if (is_object($result) && property_exists($result, 'status') && $result->status === 'error') {
+            throw new Exception($result->message ?? 'Domain status update failed');
+        }
+        
+        return (array) $result;
+    }
+    
+    public function deleteDomain($domain) {
+        $domain = trim($domain);
+        if (empty($domain)) {
+            throw new InvalidArgumentException('Domain name cannot be empty');
+        }
+        
+        $encoded_domain = urlencode($domain);
+        $result = $this->doRequest('DELETE', "/website/{$encoded_domain}");
+        
+        if (!$result) {
+            throw new Exception('Domain deletion error. Please try again.');
+        }
+        
+        if (is_object($result) && property_exists($result, 'status') && $result->status === 'error') {
+            throw new Exception($result->message ?? 'Domain deletion failed');
+        }
+        
+        return (array) $result;
+    }
+    
+    public function createGateKeeperUser($user_data) {
+        if (empty($user_data['id'])) {
+            throw new InvalidArgumentException('User ID is required for GateKeeper user creation');
+        }
+        
+        if (is_numeric($user_data['id'])) {
+            $user_data['id'] = (string) $user_data['id'];
+        }
+        
+        if (isset($user_data['tag']) && is_array($user_data['tag'])) {
+            $user_data['tag'] = implode(',', $user_data['tag']);
+        }
+        
+        $result = $this->doGateKeeperRequest('POST', '/user', $user_data);
+        
+        if (isset($result['status'])) {
+            if ($result['status'] === 'error') {
+                if (strpos($result['message'] ?? '', 'already exists') !== false ||
+                    strpos($result['message'] ?? '', 'duplicate') !== false) {
+                    return ['status' => 'exists', 'message' => 'User already exists'];
+                }
+                throw new Exception($result['message'] ?? 'GateKeeper user creation failed');
+            }
+        }
+        
+        if (isset($result['code']) && $result['code'] >= 400) {
+            if (strpos($result['message'] ?? '', 'already exists') !== false ||
+                $result['code'] == 303) {
+                return ['status' => 'exists', 'message' => 'User already exists'];
+            }
+            throw new Exception($result['message'] ?? 'GateKeeper user creation failed');
+        }
+        
+        return $result;
+    }
+    
+    public function createGateKeeperWebsite($website_data) {
+        if (empty($website_data['domain'])) {
+            throw new InvalidArgumentException('Domain is required for GateKeeper website creation');
+        }
+        
+        if (empty($website_data['user_id'])) {
+            throw new InvalidArgumentException('User ID is required for GateKeeper website creation');
+        }
+        
+        if (is_numeric($website_data['user_id'])) {
+            $website_data['user_id'] = (string) $website_data['user_id'];
+        }
+        
+        $formatted_data = [
+            'domain' => $website_data['domain'],
+            'user_id' => $website_data['user_id'],
+            'status' => $website_data['status'] ?? 'setup'
+        ];
+        
+        if (isset($website_data['subdomain']) && is_array($website_data['subdomain'])) {
+            $formatted_data['subdomain'] = implode(',', $website_data['subdomain']);
+        }
+        
+        if (isset($website_data['ip']) && is_array($website_data['ip'])) {
+            $formatted_data['ip'] = implode(',', $website_data['ip']);
+        }
+        
+        if (isset($website_data['ipv6']) && is_array($website_data['ipv6'])) {
+            $formatted_data['ipv6'] = implode(',', $website_data['ipv6']);
+        }
+        
+        if (isset($website_data['tag']) && is_array($website_data['tag'])) {
+            $formatted_data['tag'] = implode(',', $website_data['tag']);
+        }
+        
+        $result = $this->doGateKeeperRequest('POST', '/website', $formatted_data);
+        
+        if (isset($result['status'])) {
+            if ($result['status'] === 'error') {
+                if (strpos($result['message'] ?? '', 'already exists') !== false ||
+                    strpos($result['message'] ?? '', 'duplicate') !== false) {
+                    return $this->updateGateKeeperWebsite($website_data['domain'], $formatted_data);
+                }
+                throw new Exception($result['message'] ?? 'GateKeeper website creation failed');
+            }
+        }
+        
+        if (isset($result['code']) && $result['code'] >= 400) {
+            if (strpos($result['message'] ?? '', 'already exists') !== false ||
+                $result['code'] == 303) {
+                return $this->updateGateKeeperWebsite($website_data['domain'], $formatted_data);
+            }
+            throw new Exception($result['message'] ?? 'GateKeeper website creation failed with code: ' . $result['code']);
+        }
+        
+        return $result;
+    }
+    
+    public function getGateKeeperWebsite($domain) {
+        $encoded_domain = urlencode($domain);
+        $result = $this->doGateKeeperRequest('GET', "/website/{$encoded_domain}");
+        
+        if (isset($result['status']) && $result['status'] === 'error') {
+            throw new Exception($result['message'] ?? 'GateKeeper website retrieval failed');
+        }
+        
+        return $result;
+    }
+    
+    public function updateGateKeeperWebsite($domain, $website_data) {
+        $encoded_domain = urlencode($domain);
+        $result = $this->doGateKeeperRequest('PUT', "/website/{$encoded_domain}", $website_data);
+        
+        if (isset($result['status']) && $result['status'] === 'error') {
+            throw new Exception($result['message'] ?? 'GateKeeper website update failed');
+        }
+        
+        return $result;
+    }
+    
+    public function deleteGateKeeperWebsite($domain) {
+        $encoded_domain = urlencode($domain);
+        $result = $this->doGateKeeperRequest('DELETE', "/website/{$encoded_domain}");
+        
+        if (isset($result['status']) && $result['status'] === 'error') {
+            throw new Exception($result['message'] ?? 'GateKeeper website deletion failed');
+        }
+        
+        return $result;
+    }
+    
+    public static function getDomainARecords($domain) {
+        $default_ip = ['1.2.3.4'];
         
         try {
             $dns_records = @dns_get_record($domain, DNS_A);
@@ -403,7 +341,6 @@ class BlackwallApi {
                 }
             }
             
-            // Try with www prefix
             if (strpos($domain, 'www.') !== 0) {
                 $www_domain = 'www.' . $domain;
                 $www_dns_records = @dns_get_record($www_domain, DNS_A);
@@ -422,7 +359,6 @@ class BlackwallApi {
                 }
             }
             
-            // Fallback to gethostbyname
             $ip = gethostbyname($domain);
             if ($ip && $ip !== $domain) {
                 return [$ip];
@@ -435,11 +371,8 @@ class BlackwallApi {
         }
     }
     
-    /**
-     * Get AAAA record IPs for a domain
-     */
-    public static function getDomainAAAARecords(string $domain): array {
-        $default_ipv6 = ['2001:db8::1']; // Generic fallback IPv6
+    public static function getDomainAAAARecords($domain) {
+        $default_ipv6 = ['2001:db8::1'];
         
         try {
             $dns_records = @dns_get_record($domain, DNS_AAAA);
@@ -457,7 +390,6 @@ class BlackwallApi {
                 }
             }
             
-            // Try with www prefix
             if (strpos($domain, 'www.') !== 0) {
                 $www_domain = 'www.' . $domain;
                 $www_dns_records = @dns_get_record($www_domain, DNS_AAAA);
@@ -483,10 +415,7 @@ class BlackwallApi {
         }
     }
     
-    /**
-     * Check if domain DNS is correctly configured for Blackwall
-     */
-    public static function checkDomainDnsConfiguration(string $domain): array {
+    public static function checkDomainDnsConfiguration($domain) {
         $result = [
             'status' => false,
             'connected_to' => null,
@@ -498,7 +427,6 @@ class BlackwallApi {
         ];
         
         try {
-            // Get current DNS records
             $a_records = @dns_get_record($domain, DNS_A);
             $aaaa_records = @dns_get_record($domain, DNS_AAAA);
             
@@ -510,7 +438,6 @@ class BlackwallApi {
                 $result['ipv6_records'] = array_column($aaaa_records, 'ipv6');
             }
             
-            // Check if domain points to any of our nodes
             $nodes = BlackwallConstants::getGateKeeperNodes();
             
             foreach ($nodes as $node_name => $node_ips) {
@@ -523,7 +450,6 @@ class BlackwallApi {
                     $result['ipv6_status'] = $ipv6_match;
                     $result['status'] = true;
                     
-                    // Check for missing records
                     if (!$ipv4_match) {
                         $result['missing_records'][] = [
                             'type' => 'A',
@@ -542,7 +468,6 @@ class BlackwallApi {
                 }
             }
             
-            // If not connected to any node, recommend first node
             if (!$result['status']) {
                 $first_node = reset($nodes);
                 $result['missing_records'] = [
@@ -558,7 +483,6 @@ class BlackwallApi {
             }
             
         } catch (Exception $e) {
-            // Return default missing records on error
             $first_node = reset(BlackwallConstants::getGateKeeperNodes());
             $result['missing_records'] = [
                 [
@@ -575,19 +499,15 @@ class BlackwallApi {
         return $result;
     }
     
-    /**
-     * Make HTTP request to BotGuard API (SAFE MODE)
-     */
-    private function doRequest(string $method, string $endpoint, ?array $params = null): mixed {
+    private function doRequest($method, $endpoint, $params = null) {
         if (empty($this->api_key)) {
-            return []; // Return empty array if no API key
+            return [];
         }
         
         $url = $this->botguard_base_url . $endpoint;
         
-        // Debug logging
         if (class_exists('BlackwallDebugLogger')) {
-            BlackwallDebugLogger::debug('BotGuard API request (safe mode)', [
+            BlackwallDebugLogger::debug('BotGuard API request', [
                 'method' => $method,
                 'url' => $url,
                 'has_params' => !empty($params)
@@ -595,26 +515,49 @@ class BlackwallApi {
         }
         
         try {
-            $result = $this->makeHttpRequest($method, $url, $params);
+            $result = $this->makeHttpRequest($method, $url, $params, 'BotGuard', true);
             
-            // Debug logging
             if (class_exists('BlackwallDebugLogger')) {
-                BlackwallDebugLogger::debug('BotGuard API response (safe mode)', [
+                BlackwallDebugLogger::debug('BotGuard API response', [
                     'success' => !empty($result)
                 ]);
             }
             
             return $result ?? [];
         } catch (Exception $e) {
-            error_log("BotGuard API error (safe mode): " . $e->getMessage());
+            error_log("BotGuard API error: " . $e->getMessage());
             return [];
         }
     }
     
-    /**
-     * Make generic HTTP request
-     */
-    private function makeHttpRequest(string $method, string $url, ?array $params = null, string $api_name = '', bool $use_json = true): mixed {
+    private function doGateKeeperRequest($method, $endpoint, $params = null) {
+        $url = $this->gatekeeper_base_url . $endpoint;
+        
+        if (class_exists('BlackwallDebugLogger')) {
+            BlackwallDebugLogger::debug('GateKeeper API request', [
+                'method' => $method,
+                'url' => $url,
+                'has_params' => !empty($params)
+            ]);
+        }
+        
+        try {
+            $result = $this->makeHttpRequest($method, $url, $params, 'GateKeeper', false);
+            
+            if (class_exists('BlackwallDebugLogger')) {
+                BlackwallDebugLogger::debug('GateKeeper API response', [
+                    'success' => !empty($result)
+                ]);
+            }
+            
+            return is_array($result) ? $result : [];
+        } catch (Exception $e) {
+            error_log("GateKeeper API error: " . $e->getMessage());
+            throw $e;
+        }
+    }
+    
+    private function makeHttpRequest($method, $url, $params = null, $api_name = '', $use_json = true) {
         $ch = curl_init();
         if (!$ch) {
             if ($api_name === 'BotGuard') {
@@ -625,28 +568,25 @@ class BlackwallApi {
         }
         
         try {
-            // Basic cURL options
             curl_setopt_array($ch, [
                 CURLOPT_URL => $url,
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT => $this->timeout,
-                CURLOPT_CONNECTTIMEOUT => 5, // Quick connection timeout
+                CURLOPT_CONNECTTIMEOUT => 5,
                 CURLOPT_FOLLOWLOCATION => true,
                 CURLOPT_MAXREDIRS => 2,
                 CURLOPT_SSL_VERIFYPEER => true,
                 CURLOPT_SSL_VERIFYHOST => 2,
-                CURLOPT_USERAGENT => 'WHMCS-Blackwall-Module/2.2-WiseCP-Flow',
+                CURLOPT_USERAGENT => 'WHMCS-Blackwall-Module/2.2-Clean',
                 CURLOPT_CUSTOMREQUEST => strtoupper($method),
-                CURLOPT_FAILONERROR => false, // Don't fail on HTTP errors
+                CURLOPT_FAILONERROR => false,
             ]);
             
-            // Set headers
             $headers = [
                 'Authorization: Bearer ' . $this->api_key,
                 'Accept: application/json'
             ];
             
-            // For BotGuard, use form encoding. For GateKeeper, decide based on use_json parameter
             if ($api_name === 'BotGuard' || !$use_json) {
                 $headers[] = 'Content-Type: application/x-www-form-urlencoded';
             } else {
@@ -655,23 +595,19 @@ class BlackwallApi {
             
             curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
             
-            // Handle request data
             if ($params !== null) {
                 if (in_array(strtoupper($method), ['POST', 'PUT', 'PATCH'])) {
                     if ($use_json && $api_name !== 'BotGuard') {
                         $json_data = json_encode($params);
                         curl_setopt($ch, CURLOPT_POSTFIELDS, $json_data);
                         
-                        // Log the JSON data being sent
                         if (class_exists('BlackwallDebugLogger')) {
                             BlackwallDebugLogger::debug("{$api_name} JSON Data", ['data' => $json_data]);
                         }
                     } else {
-                        // Use form encoding for BotGuard and when use_json is false
                         $form_data = http_build_query($params);
                         curl_setopt($ch, CURLOPT_POSTFIELDS, $form_data);
                         
-                        // Log the form data being sent
                         if (class_exists('BlackwallDebugLogger')) {
                             BlackwallDebugLogger::debug("{$api_name} Form Data", ['data' => $form_data]);
                         }
@@ -682,7 +618,6 @@ class BlackwallApi {
                 }
             }
             
-            // Execute request
             $response = curl_exec($ch);
             
             if ($response === false) {
@@ -696,7 +631,6 @@ class BlackwallApi {
             
             $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
             
-            // Log response for debugging
             if (class_exists('BlackwallDebugLogger')) {
                 BlackwallDebugLogger::debug("{$api_name} Response", [
                     'http_code' => $http_code,
@@ -705,7 +639,6 @@ class BlackwallApi {
                 ]);
             }
             
-            // Handle HTTP errors
             if ($http_code >= 400) {
                 $error_message = "HTTP {$http_code} error";
                 
@@ -714,12 +647,10 @@ class BlackwallApi {
                     $error_message .= ": {$decoded_response['message']}";
                 }
                 
-                // For GateKeeper, return the decoded response instead of throwing
                 if ($api_name === 'GateKeeper' && $decoded_response) {
                     return $decoded_response;
                 }
                 
-                // For BotGuard, log and return empty array instead of throwing
                 if ($api_name === 'BotGuard') {
                     error_log("BotGuard HTTP Error {$http_code}: " . $response);
                     return [];
@@ -728,11 +659,9 @@ class BlackwallApi {
                 throw new Exception($error_message);
             }
             
-            // Decode JSON response
             $decoded_response = json_decode($response, true);
             
             if (json_last_error() !== JSON_ERROR_NONE) {
-                // For non-JSON responses (like 204 No Content), return empty array
                 if ($api_name === 'BotGuard') {
                     return [];
                 }
@@ -742,22 +671,17 @@ class BlackwallApi {
             return $decoded_response ?? [];
             
         } catch (Exception $e) {
-            // For BotGuard API, log and return empty array instead of throwing
             if ($api_name === 'BotGuard') {
                 error_log("BotGuard API Exception: " . $e->getMessage());
                 return [];
             }
-            // Re-throw for other APIs
             throw $e;
         } finally {
             curl_close($ch);
         }
     }
     
-    /**
-     * Set custom timeout
-     */
-    public function setTimeout(int $timeout): void {
+    public function setTimeout($timeout) {
         if ($timeout <= 0) {
             throw new InvalidArgumentException('Timeout must be greater than 0');
         }
@@ -765,17 +689,11 @@ class BlackwallApi {
         $this->timeout = $timeout;
     }
     
-    /**
-     * Get current timeout
-     */
-    public function getTimeout(): int {
+    public function getTimeout() {
         return $this->timeout;
     }
     
-    /**
-     * Check if API key is configured
-     */
-    public function hasApiKey(): bool {
+    public function hasApiKey() {
         return !empty($this->api_key);
     }
 }

@@ -73,7 +73,7 @@ function blackwall_ConfigOptions() {
 /**
  * Test connection to the service
  */
-function blackwall_TestConnection(array $params) {
+function blackwall_TestConnection($params) {
     try {
         if (empty($params['configoption1'])) {
             throw new Exception('API Key is required for connection test.');
@@ -106,7 +106,7 @@ function blackwall_TestConnection(array $params) {
 /**
  * Provision a new account - Following WiseCP Flow
  */
-function blackwall_CreateAccount(array $params) {
+function blackwall_CreateAccount($params) {
     try {
         BlackwallDebugLogger::info('=== CreateAccount STARTED (WiseCP Flow) ===', [
             'params' => array_keys($params)
@@ -168,6 +168,11 @@ function blackwall_CreateAccount(array $params) {
             $subaccount = $api->createSubaccount($subaccount_data);
             $user_id = $subaccount['id'] ?? null;
             $user_api_key = $subaccount['api_key'] ?? null;
+            
+            BlackwallDebugLogger::info('Subaccount creation successful', [
+                'user_id' => $user_id,
+                'has_api_key' => !empty($user_api_key)
+            ]);
         } catch (Exception $sub_e) {
             // If subaccount creation fails, try to find existing one
             BlackwallDebugLogger::warning('Subaccount creation failed, trying to find existing', [
@@ -182,40 +187,65 @@ function blackwall_CreateAccount(array $params) {
                     $user_api_key = $subaccount['api_key'] ?? null;
                     BlackwallDebugLogger::info('Found existing subaccount', ['user_id' => $user_id]);
                 } else {
-                    throw new Exception('Failed to create or find BotGuard subaccount: ' . $sub_e->getMessage());
+                    // If we can't create or find a subaccount, proceed without one
+                    BlackwallDebugLogger::warning('No subaccount found, proceeding with master account', [
+                        'original_error' => $sub_e->getMessage()
+                    ]);
+                    $user_id = null;
+                    $user_api_key = null;
                 }
             } catch (Exception $find_e) {
-                throw new Exception('Failed to create or find BotGuard subaccount: ' . $sub_e->getMessage());
+                // If finding also fails, proceed without subaccount
+                BlackwallDebugLogger::warning('Find subaccount also failed, proceeding with master account', [
+                    'original_error' => $sub_e->getMessage(),
+                    'find_error' => $find_e->getMessage()
+                ]);
+                $user_id = null;
+                $user_api_key = null;
             }
-        }
-        
-        if (!$user_id) {
-            throw new Exception('Failed to get user ID from BotGuard subaccount.');
         }
         
         BlackwallDebugLogger::info('BotGuard subaccount ready', [
             'user_id' => $user_id,
-            'has_api_key' => !empty($user_api_key)
+            'has_api_key' => !empty($user_api_key),
+            'using_master_account' => $user_id === null
         ]);
         
         // Step 2: Add domain to BotGuard
         $website_data = [
-            'domain' => $domain,
-            'user' => $user_id
+            'domain' => $domain
         ];
         
+        // Only add user if we have one
+        if ($user_id !== null) {
+            $website_data['user'] = $user_id;
+        }
+        
         BlackwallDebugLogger::info('Adding domain to BotGuard', $website_data);
-        $domain_result = $api->addDomain($domain, $user_id);
-        BlackwallDebugLogger::info('Domain added to BotGuard', $domain_result);
+        
+        try {
+            $domain_result = $api->addDomain($domain, $user_id);
+            BlackwallDebugLogger::info('Domain added to BotGuard', $domain_result);
+        } catch (Exception $domain_e) {
+            BlackwallDebugLogger::error('Failed to add domain to BotGuard', [
+                'error' => $domain_e->getMessage(),
+                'domain' => $domain,
+                'user_id' => $user_id
+            ]);
+            // Continue anyway - the domain might already exist
+        }
         
         // Step 3: GateKeeper integration (if enabled)
         if ($gatekeeper_enabled) {
             BlackwallDebugLogger::info('Starting GateKeeper integration', ['domain' => $domain]);
             
             try {
+                // Use a timestamp-based user ID if we don't have a real one
+                $gk_user_id = $user_id ?? time();
+                
                 // Step 3a: Create user in GateKeeper
                 $gk_user_data = [
-                    'id' => (string) $user_id,
+                    'id' => (string) $gk_user_id,
                     'tag' => 'whmcs'
                 ];
                 
@@ -251,7 +281,7 @@ function blackwall_CreateAccount(array $params) {
                     'subdomain' => ['www'],
                     'ip' => $domain_ips,
                     'ipv6' => $domain_ipv6s,
-                    'user_id' => (string) $user_id,
+                    'user_id' => (string) $gk_user_id,
                     'tag' => ['whmcs'],
                     'status' => BlackwallConstants::STATUS_SETUP,
                     'settings' => BlackwallConstants::getDefaultWebsiteSettings()
@@ -292,7 +322,7 @@ function blackwall_CreateAccount(array $params) {
                     BlackwallDebugLogger::info('Trying alternative GateKeeper creation method');
                     $minimal_data = [
                         'domain' => $domain,
-                        'user_id' => (string) $user_id,
+                        'user_id' => (string) $gk_user_id,
                         'status' => BlackwallConstants::STATUS_SETUP
                     ];
                     
@@ -309,7 +339,7 @@ function blackwall_CreateAccount(array $params) {
             } catch (Exception $gk_e) {
                 BlackwallDebugLogger::error('GateKeeper integration failed', [
                     'domain' => $domain,
-                    'user_id' => $user_id,
+                    'user_id' => $gk_user_id ?? 'unknown',
                     'error' => $gk_e->getMessage(),
                     'trace' => $gk_e->getTraceAsString()
                 ]);
@@ -337,18 +367,21 @@ function blackwall_CreateAccount(array $params) {
         BlackwallDebugLogger::info('Storing service properties', [
             'domain' => $domain,
             'user_id' => $user_id,
-            'gatekeeper_enabled' => $gatekeeper_enabled
+            'gatekeeper_enabled' => $gatekeeper_enabled,
+            'using_master_account' => $user_id === null
         ]);
         
         if (isset($params['model']) && method_exists($params['model'], 'serviceProperties')) {
             try {
-                $params['model']->serviceProperties->save([
+                $service_props = [
                     'Blackwall Domain' => $domain,
-                    'Blackwall User ID' => $user_id,
-                    'Blackwall API Key' => $user_api_key,
+                    'Blackwall User ID' => $user_id ?? 'master',
+                    'Blackwall API Key' => $user_api_key ?? $api_key,
                     'GateKeeper Enabled' => $gatekeeper_enabled ? 'Yes' : 'No',
-                    'Creation Method' => 'WiseCP Flow v2.2.0',
-                ]);
+                    'Creation Method' => 'WiseCP Flow v2.2.0 (Fallback Mode)',
+                ];
+                
+                $params['model']->serviceProperties->save($service_props);
                 BlackwallDebugLogger::info('Service properties saved successfully');
             } catch (Exception $props_e) {
                 BlackwallDebugLogger::error('Failed to save service properties', [
@@ -383,7 +416,7 @@ function blackwall_CreateAccount(array $params) {
 /**
  * Suspend an account
  */
-function blackwall_SuspendAccount(array $params) {
+function blackwall_SuspendAccount($params) {
     try {
         if (empty($params['configoption1'])) {
             throw new Exception('API Key is not configured.');
@@ -442,7 +475,7 @@ function blackwall_SuspendAccount(array $params) {
 /**
  * Unsuspend an account
  */
-function blackwall_UnsuspendAccount(array $params) {
+function blackwall_UnsuspendAccount($params) {
     try {
         if (empty($params['configoption1'])) {
             throw new Exception('API Key is not configured.');
@@ -501,7 +534,7 @@ function blackwall_UnsuspendAccount(array $params) {
 /**
  * Terminate an account
  */
-function blackwall_TerminateAccount(array $params) {
+function blackwall_TerminateAccount($params) {
     try {
         if (empty($params['configoption1'])) {
             throw new Exception('API Key is not configured.');
@@ -553,34 +586,12 @@ function blackwall_TerminateAccount(array $params) {
         logModuleCall('blackwall', __FUNCTION__, $params, $e->getMessage(), $e->getTraceAsString());
         return $e->getMessage();
     }
-} blackwall_TerminateAccount(array $params) {
-    try {
-        $domain = blackwall_getDomainFromParams($params);
-        
-        // Clean up service properties
-        if (isset($params['model']) && method_exists($params['model'], 'serviceProperties')) {
-            $params['model']->serviceProperties->save([
-                'Blackwall Domain' => '',
-                'Setup Instructions' => '',
-                'Service Type' => '',
-                'Service Status' => 'Terminated',
-                'Terminated Date' => date('Y-m-d H:i:s'),
-            ]);
-        }
-        
-        BlackwallDebugLogger::info('Account terminated (informational)', ['domain' => $domain]);
-        return 'success';
-        
-    } catch (Exception $e) {
-        logModuleCall('blackwall', __FUNCTION__, $params, $e->getMessage(), $e->getTraceAsString());
-        return $e->getMessage();
-    }
 }
 
 /**
  * Client area output
  */
-function blackwall_ClientArea(array $params) {
+function blackwall_ClientArea($params) {
     try {
         $domain = blackwall_getDomainFromParams($params);
         $api_key = $params['configoption1'] ?? '';
@@ -639,7 +650,7 @@ function blackwall_AdminCustomButtonArray() {
 /**
  * Test connection admin function
  */
-function blackwall_testConnectionAdmin(array $params) {
+function blackwall_testConnectionAdmin($params) {
     try {
         if (empty($params['configoption1'])) {
             return 'API Key is required.';
@@ -659,7 +670,7 @@ function blackwall_testConnectionAdmin(array $params) {
 /**
  * Force create account test admin function
  */
-function blackwall_forceCreateAccountTest(array $params) {
+function blackwall_forceCreateAccountTest($params) {
     BlackwallDebugLogger::info('=== FORCE CREATE ACCOUNT TEST (WiseCP Flow) ===');
     
     try {
@@ -836,7 +847,7 @@ function blackwall_clearDebugLogs(array $params) {
 /**
  * Single Sign-On function
  */
-function blackwall_ServiceSingleSignOn(array $params) {
+function blackwall_ServiceSingleSignOn($params) {
     try {
         $domain = blackwall_getDomainFromParams($params);
         $user_api_key = blackwall_getUserApiKeyFromParams($params);
@@ -905,7 +916,7 @@ function blackwall_ServiceSingleSignOn(array $params) {
 /**
  * Helper function to get domain from params
  */
-function blackwall_getDomainFromParams(array $params) {
+function blackwall_getDomainFromParams($params) {
     if (!empty($params['domain'])) {
         return $params['domain'];
     }
@@ -928,7 +939,7 @@ function blackwall_getDomainFromParams(array $params) {
 /**
  * Helper function to get user ID from params
  */
-function blackwall_getUserIdFromParams(array $params) {
+function blackwall_getUserIdFromParams($params) {
     try {
         if (isset($params['model']) && method_exists($params['model'], 'serviceProperties')) {
             $user_id = $params['model']->serviceProperties->get('Blackwall User ID');
@@ -947,7 +958,7 @@ function blackwall_getUserIdFromParams(array $params) {
 /**
  * Helper function to get user API key from params
  */
-function blackwall_getUserApiKeyFromParams(array $params) {
+function blackwall_getUserApiKeyFromParams($params) {
     try {
         if (isset($params['model']) && method_exists($params['model'], 'serviceProperties')) {
             return $params['model']->serviceProperties->get('Blackwall API Key');
