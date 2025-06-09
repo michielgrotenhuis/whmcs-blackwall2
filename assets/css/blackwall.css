@@ -1,6 +1,6 @@
 /**
  * Blackwall WHMCS Module Styles
- * Version 2.0.0
+ * Version 2.0.1 - Updated with better button spacing and layout
  */
 
 /* Main container */
@@ -48,6 +48,29 @@
     font-weight: 600;
 }
 
+/* Improved button group spacing in iframe header */
+.iframe-header .btn-group {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.iframe-header .btn {
+    margin-left: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.375rem;
+    transition: all 0.15s ease-in-out;
+}
+
+.iframe-header .btn:first-child {
+    margin-left: 0;
+}
+
+.iframe-header .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
 .iframe-container iframe {
     width: 100%;
     height: calc(100% - 60px);
@@ -58,27 +81,60 @@
 /* Tab customizations */
 .blackwall-client-area .nav-tabs {
     border-bottom: 2px solid #e9ecef;
+    margin-bottom: 0;
+    background: #f8f9fa;
+    padding: 0.5rem 1rem 0;
 }
 
 .blackwall-client-area .nav-tabs .nav-link {
-    border: none;
+    border: 1px solid transparent;
     border-bottom: 3px solid transparent;
-    color: #6c757d;
-    font-weight: 500;
-    padding: 0.75rem 1rem;
+    color: #495057;
+    font-weight: 600;
+    font-size: 0.95rem;
+    padding: 0.875rem 1.25rem;
     transition: all 0.15s ease-in-out;
+    margin-right: 0.5rem;
+    margin-bottom: 0;
+    background: #ffffff;
+    border-radius: 8px 8px 0 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    text-decoration: none;
 }
 
 .blackwall-client-area .nav-tabs .nav-link:hover {
-    border-color: transparent;
-    color: #495057;
-    background: rgba(0,0,0,0.02);
+    border-color: #dee2e6;
+    color: #212529;
+    background: #fff;
+    border-bottom-color: #667eea;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    text-decoration: none;
 }
 
 .blackwall-client-area .nav-tabs .nav-link.active {
-    color: #667eea;
+    color: #ffffff;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-color: #667eea;
     border-bottom-color: #667eea;
+    font-weight: 700;
+    box-shadow: 0 3px 8px rgba(102, 126, 234, 0.3);
+    text-decoration: none;
+}
+
+.blackwall-client-area .nav-tabs .nav-link.active:hover {
+    color: #ffffff;
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    transform: translateY(-1px);
+}
+
+/* Tab content spacing */
+.blackwall-client-area .tab-content {
     background: white;
+}
+
+.blackwall-client-area .tab-pane {
+    min-height: 400px;
 }
 
 /* Badge styles */
@@ -190,6 +246,7 @@
 .blackwall-client-area .btn-outline-primary:hover {
     background-color: #667eea;
     border-color: #667eea;
+    transform: translateY(-1px);
 }
 
 .blackwall-client-area .btn-outline-secondary {
@@ -200,6 +257,18 @@
 .blackwall-client-area .btn-outline-secondary:hover {
     background-color: #6c757d;
     border-color: #6c757d;
+    transform: translateY(-1px);
+}
+
+.blackwall-client-area .btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.blackwall-client-area .btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+    transform: translateY(-1px);
 }
 
 .blackwall-client-area .btn-xs {
@@ -207,6 +276,19 @@
     font-size: 0.75rem;
     line-height: 1.5;
     border-radius: 0.2rem;
+}
+
+/* Improved button spacing */
+.blackwall-client-area .btn + .btn {
+    margin-left: 0.5rem;
+}
+
+.blackwall-client-area .btn-group .btn {
+    margin-left: 0;
+}
+
+.blackwall-client-area .btn-group .btn + .btn {
+    margin-left: -1px;
 }
 
 /* Copy notification */
@@ -296,15 +378,53 @@
     z-index: 1;
 }
 
+/* Accordion styles for FAQ */
+.blackwall-client-area .accordion .card {
+    border: 1px solid #e9ecef;
+    margin-bottom: 0.5rem;
+}
+
+.blackwall-client-area .accordion .card-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    padding: 0;
+}
+
+.blackwall-client-area .accordion .card-header .btn {
+    background: none;
+    border: none;
+    color: #495057;
+    font-weight: 500;
+    padding: 1rem;
+    text-align: left;
+    width: 100%;
+    text-decoration: none;
+}
+
+.blackwall-client-area .accordion .card-header .btn:hover {
+    background: rgba(0,0,0,0.02);
+    text-decoration: none;
+}
+
+.blackwall-client-area .accordion .card-header .btn:focus {
+    box-shadow: none;
+    text-decoration: none;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
     .blackwall-client-area .iframe-container {
         height: 500px;
     }
     
+    .blackwall-client-area .nav-tabs {
+        padding: 0.25rem 0.5rem 0;
+    }
+    
     .blackwall-client-area .nav-tabs .nav-link {
-        padding: 0.5rem 0.75rem;
+        padding: 0.75rem 1rem;
         font-size: 0.875rem;
+        margin-right: 0.25rem;
     }
     
     .blackwall-client-area .table-responsive {
@@ -322,6 +442,16 @@
         left: 10px;
         text-align: center;
     }
+    
+    .iframe-header {
+        flex-direction: column;
+        gap: 0.5rem;
+        align-items: stretch;
+    }
+    
+    .iframe-header .btn-group {
+        justify-content: center;
+    }
 }
 
 @media (max-width: 576px) {
@@ -334,13 +464,28 @@
         font-size: 1rem;
     }
     
+    .blackwall-client-area .nav-tabs {
+        padding: 0.25rem;
+        flex-wrap: wrap;
+    }
+    
     .blackwall-client-area .nav-tabs .nav-link {
-        padding: 0.4rem 0.6rem;
+        padding: 0.5rem 0.75rem;
         font-size: 0.8rem;
+        margin-right: 0.125rem;
+        margin-bottom: 0.25rem;
+        flex: 1 1 auto;
+        text-align: center;
+        min-width: 120px;
     }
     
     .blackwall-client-area .nav-tabs .nav-link i {
-        display: none;
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+    
+    .blackwall-client-area .btn + .btn {
+        margin-left: 0.25rem;
     }
 }
 
@@ -385,4 +530,14 @@
     .blackwall-client-area .tab-pane {
         display: block !important;
     }
+}
+
+/* Custom tab panel visibility fix */
+.blackwall-client-area .tab-pane {
+    display: none;
+}
+
+.blackwall-client-area .tab-pane.active,
+.blackwall-client-area .tab-pane.show {
+    display: block;
 }
