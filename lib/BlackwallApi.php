@@ -134,7 +134,23 @@ class BlackwallApi {
             $data['user'] = $user_id;
         }
         
+        // Log the API call
+        if (class_exists('BlackwallDebugLogger')) {
+            BlackwallDebugLogger::debug('BotGuard addDomain API call', [
+                'domain' => $domain,
+                'user_id' => $user_id,
+                'data' => $data
+            ]);
+        }
+        
         $result = $this->doRequest('POST', '/website', $data);
+        
+        // Log the result
+        if (class_exists('BlackwallDebugLogger')) {
+            BlackwallDebugLogger::debug('BotGuard addDomain API result', [
+                'result' => $result
+            ]);
+        }
         
         if (!$result) {
             throw new Exception('Domain registration error. Please try again.');
@@ -556,8 +572,24 @@ class BlackwallApi {
     private function doRequest(string $method, string $endpoint, ?array $params = null): mixed {
         $url = $this->botguard_base_url . $endpoint;
         
+        // Debug logging
+        if (class_exists('BlackwallDebugLogger')) {
+            BlackwallDebugLogger::debug('BotGuard API request', [
+                'method' => $method,
+                'url' => $url,
+                'params' => $params
+            ]);
+        }
+        
         // For BotGuard, always return safe results - never throw exceptions
         $result = $this->makeHttpRequest($method, $url, $params, 'BotGuard');
+        
+        // Debug logging
+        if (class_exists('BlackwallDebugLogger')) {
+            BlackwallDebugLogger::debug('BotGuard API response', [
+                'result' => $result
+            ]);
+        }
         
         // makeHttpRequest should already return [] for BotGuard on errors
         return $result ?? [];
