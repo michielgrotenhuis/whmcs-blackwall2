@@ -592,6 +592,8 @@ function blackwall_ClientArea(array $params) {
  */
 function blackwall_AdminCustomButtonArray() {
     return [
+        'Check Module Version' => 'checkModuleVersion',
+        'Force CreateAccount Test' => 'forceCreateAccountTest',
         'Test Connection' => 'testConnectionAdmin',
         'Sync Status' => 'syncStatus',
         'Check DNS' => 'checkDns',
@@ -658,6 +660,69 @@ function blackwall_checkDns(array $params) {
     } catch (Exception $e) {
         logModuleCall('blackwall', __FUNCTION__, $params, $e->getMessage(), $e->getTraceAsString());
         return 'DNS check failed: ' . $e->getMessage();
+    }
+}
+
+/**
+ * Check module version admin function
+ */
+function blackwall_checkModuleVersion(array $params) {
+    $version_info = [
+        'module_file' => __FILE__,
+        'has_debug_logger' => class_exists('BlackwallDebugLogger'),
+        'createaccount_method' => 'UPDATED_NO_SUBACCOUNTS',
+        'timestamp' => date('Y-m-d H:i:s'),
+        'php_version' => PHP_VERSION,
+        'function_exists' => [
+            'blackwall_CreateAccount' => function_exists('blackwall_CreateAccount'),
+            'blackwall_viewDebugLogs' => function_exists('blackwall_viewDebugLogs'),
+        ]
+    ];
+    
+    // Test if we can create debug logger
+    try {
+        BlackwallDebugLogger::info('Version check called');
+        $version_info['debug_logger_working'] = true;
+        $version_info['log_file'] = BlackwallDebugLogger::getLogFile();
+    } catch (Exception $e) {
+        $version_info['debug_logger_working'] = false;
+        $version_info['debug_logger_error'] = $e->getMessage();
+    }
+    
+    return "Module Version Info:\n" . json_encode($version_info, JSON_PRETTY_PRINT);
+}
+
+/**
+ * Force create account test admin function
+ */
+function blackwall_forceCreateAccountTest(array $params) {
+    BlackwallDebugLogger::info('=== FORCE CREATE ACCOUNT TEST ===');
+    
+    try {
+        $domain = blackwall_getDomainFromParams($params);
+        
+        // Force call the CreateAccount function directly
+        $test_params = $params;
+        $test_params['domain'] = $domain;
+        
+        BlackwallDebugLogger::info('Calling blackwall_CreateAccount directly', [
+            'domain' => $domain,
+            'params_keys' => array_keys($test_params)
+        ]);
+        
+        $result = blackwall_CreateAccount($test_params);
+        
+        BlackwallDebugLogger::info('CreateAccount result', ['result' => $result]);
+        
+        return "CreateAccount test result: " . $result . "\nCheck debug logs for details.";
+        
+    } catch (Exception $e) {
+        BlackwallDebugLogger::error('CreateAccount test failed', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        return "CreateAccount test failed: " . $e->getMessage();
     }
 }
 
