@@ -1,4 +1,4 @@
-{* Blackwall WHMCS Module - Client Area Overview Template *}
+{* Blackwall WHMCS Module - Client Area Overview Template (Simplified Mode) *}
 {* Compatible with WHMCS 8.13 and modern themes *}
 
 <link rel="stylesheet" type="text/css" href="{$WEB_ROOT}/modules/servers/blackwall/assets/css/blackwall.css">
@@ -29,6 +29,14 @@
                             <p><strong>Secondary Server:</strong> {$secondary_server}</p>
                         </div>
                     </div>
+                    
+                    {if $simplified_mode}
+                        <div class="alert alert-info mt-3" role="alert">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Information Mode:</strong> This service provides DNS configuration instructions and protection guidance. 
+                            {if !$api_key}No API integration is configured.{/if}
+                        </div>
+                    {/if}
                 </div>
             </div>
         </div>
@@ -113,54 +121,47 @@
                 <div class="card">
                     <div class="card-header">
                         <ul class="nav nav-tabs card-header-tabs" id="blackwall-tabs" role="tablist">
+                            {if $api_key && !$simplified_mode}
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="statistics-tab" data-bs-toggle="tab" data-bs-target="#statistics" type="button" role="tab">
+                                        <i class="fas fa-chart-bar me-2"></i>Statistics
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="events-tab" data-bs-toggle="tab" data-bs-target="#events" type="button" role="tab">
+                                        <i class="fas fa-list me-2"></i>Events Log
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab">
+                                        <i class="fas fa-cog me-2"></i>Settings
+                                    </button>
+                                </li>
+                            {/if}
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="statistics-tab" data-bs-toggle="tab" data-bs-target="#statistics" type="button" role="tab">
-                                    <i class="fas fa-chart-bar me-2"></i>Statistics
+                                <button class="nav-link {if $simplified_mode || !$api_key}active{/if}" id="setup-tab" data-bs-toggle="tab" data-bs-target="#setup" type="button" role="tab">
+                                    <i class="fas fa-wrench me-2"></i>Setup Instructions
                                 </button>
                             </li>
                             <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="events-tab" data-bs-toggle="tab" data-bs-target="#events" type="button" role="tab">
-                                    <i class="fas fa-list me-2"></i>Events Log
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab">
-                                    <i class="fas fa-cog me-2"></i>Settings
-                                </button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link" id="setup-tab" data-bs-toggle="tab" data-bs-target="#setup" type="button" role="tab">
-                                    <i class="fas fa-wrench me-2"></i>Setup
+                                <button class="nav-link" id="help-tab" data-bs-toggle="tab" data-bs-target="#help" type="button" role="tab">
+                                    <i class="fas fa-question-circle me-2"></i>Help
                                 </button>
                             </li>
                         </ul>
                     </div>
                     <div class="card-body p-0">
                         <div class="tab-content" id="blackwall-tab-content">
-                            {* Statistics Tab *}
-                            <div class="tab-pane fade show active" id="statistics" role="tabpanel">
-                                <div class="iframe-container">
-                                    <div class="iframe-header">
-                                        <span>Statistics Dashboard</span>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshIframe('statistics-iframe')">
-                                            <i class="fas fa-sync-alt"></i> Refresh
-                                        </button>
-                                    </div>
-                                    {if $user_api_key}
-                                        <iframe id="statistics-iframe" 
-                                                src="https://apiv2.botguard.net/en/website/{$domain|escape:'url'}/statistics?api-key={$user_api_key|escape:'url'}" 
-                                                frameborder="0"
-                                                onload="handleIframeLoad('statistics-iframe')"
-                                                onerror="handleIframeError('statistics-iframe')"
-                                                style="display: none;"></iframe>
-                                        <div id="statistics-fallback" class="p-4 text-center">
-                                            <div class="spinner-border text-primary" role="status">
-                                                <span class="sr-only">Loading...</span>
-                                            </div>
-                                            <p class="mt-2">Loading statistics dashboard...</p>
-                                            <small class="text-muted">If this takes too long, <a href="https://apiv2.botguard.net/en/website/{$domain|escape:'url'}/statistics?api-key={$user_api_key|escape:'url'}" target="_blank">click here to open in new window</a></small>
+                            {* Statistics Tab (only if API key available) *}
+                            {if $api_key && !$simplified_mode}
+                                <div class="tab-pane fade show active" id="statistics" role="tabpanel">
+                                    <div class="iframe-container">
+                                        <div class="iframe-header">
+                                            <span>Statistics Dashboard</span>
+                                            <a href="https://apiv2.botguard.net/en/website/{$domain|escape:'url'}/statistics?api-key={$api_key|escape:'url'}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                                <i class="fas fa-external-link-alt"></i> Open in New Window
+                                            </a>
                                         </div>
-                                    {elseif $api_key}
                                         <iframe id="statistics-iframe" 
                                                 src="https://apiv2.botguard.net/en/website/{$domain|escape:'url'}/statistics?api-key={$api_key|escape:'url'}" 
                                                 frameborder="0"
@@ -174,80 +175,46 @@
                                             <p class="mt-2">Loading statistics dashboard...</p>
                                             <small class="text-muted">If this takes too long, <a href="https://apiv2.botguard.net/en/website/{$domain|escape:'url'}/statistics?api-key={$api_key|escape:'url'}" target="_blank">click here to open in new window</a></small>
                                         </div>
-                                    {else}
-                                        <div class="p-4 text-center text-muted">
-                                            <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
-                                            <p>Statistics not available. API key is missing.</p>
-                                            <small class="text-muted">Please contact support to resolve this issue.</small>
-                                        </div>
-                                    {/if}
-                                </div>
-                            </div>
-
-                            {* Events Tab *}
-                            <div class="tab-pane fade" id="events" role="tabpanel">
-                                <div class="iframe-container">
-                                    <div class="iframe-header">
-                                        <span>Protection Events Log</span>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshIframe('events-iframe')">
-                                            <i class="fas fa-sync-alt"></i> Refresh
-                                        </button>
                                     </div>
-                                    {if $user_api_key}
-                                        <iframe id="events-iframe" 
-                                                src="https://apiv2.botguard.net/en/website/{$domain|escape:'url'}/events?api-key={$user_api_key|escape:'url'}" 
-                                                frameborder="0"
-                                                onload="handleIframeLoad('events-iframe')"
-                                                onerror="handleIframeError('events-iframe')"></iframe>
-                                    {elseif $api_key}
+                                </div>
+
+                                {* Events Tab *}
+                                <div class="tab-pane fade" id="events" role="tabpanel">
+                                    <div class="iframe-container">
+                                        <div class="iframe-header">
+                                            <span>Protection Events Log</span>
+                                            <a href="https://apiv2.botguard.net/en/website/{$domain|escape:'url'}/events?api-key={$api_key|escape:'url'}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                                <i class="fas fa-external-link-alt"></i> Open in New Window
+                                            </a>
+                                        </div>
                                         <iframe id="events-iframe" 
                                                 src="https://apiv2.botguard.net/en/website/{$domain|escape:'url'}/events?api-key={$api_key|escape:'url'}" 
                                                 frameborder="0"
                                                 onload="handleIframeLoad('events-iframe')"
                                                 onerror="handleIframeError('events-iframe')"></iframe>
-                                    {else}
-                                        <div class="p-4 text-center text-muted">
-                                            <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
-                                            <p>Events log not available. API key is missing.</p>
-                                            <small class="text-muted">Please contact support to resolve this issue.</small>
-                                        </div>
-                                    {/if}
-                                </div>
-                            </div>
-
-                            {* Settings Tab *}
-                            <div class="tab-pane fade" id="settings" role="tabpanel">
-                                <div class="iframe-container">
-                                    <div class="iframe-header">
-                                        <span>Protection Settings</span>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshIframe('settings-iframe')">
-                                            <i class="fas fa-sync-alt"></i> Refresh
-                                        </button>
                                     </div>
-                                    {if $user_api_key}
-                                        <iframe id="settings-iframe" 
-                                                src="https://apiv2.botguard.net/en/website/{$domain|escape:'url'}/edit?api-key={$user_api_key|escape:'url'}" 
-                                                frameborder="0"
-                                                onload="handleIframeLoad('settings-iframe')"
-                                                onerror="handleIframeError('settings-iframe')"></iframe>
-                                    {elseif $api_key}
+                                </div>
+
+                                {* Settings Tab *}
+                                <div class="tab-pane fade" id="settings" role="tabpanel">
+                                    <div class="iframe-container">
+                                        <div class="iframe-header">
+                                            <span>Protection Settings</span>
+                                            <a href="https://apiv2.botguard.net/en/website/{$domain|escape:'url'}/edit?api-key={$api_key|escape:'url'}" target="_blank" class="btn btn-sm btn-outline-secondary">
+                                                <i class="fas fa-external-link-alt"></i> Open in New Window
+                                            </a>
+                                        </div>
                                         <iframe id="settings-iframe" 
                                                 src="https://apiv2.botguard.net/en/website/{$domain|escape:'url'}/edit?api-key={$api_key|escape:'url'}" 
                                                 frameborder="0"
                                                 onload="handleIframeLoad('settings-iframe')"
                                                 onerror="handleIframeError('settings-iframe')"></iframe>
-                                    {else}
-                                        <div class="p-4 text-center text-muted">
-                                            <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
-                                            <p>Settings not available. API key is missing.</p>
-                                            <small class="text-muted">Please contact support to resolve this issue.</small>
-                                        </div>
-                                    {/if}
+                                    </div>
                                 </div>
-                            </div>
+                            {/if}
 
                             {* Setup Tab *}
-                            <div class="tab-pane fade" id="setup" role="tabpanel">
+                            <div class="tab-pane fade {if $simplified_mode || !$api_key}show active{/if}" id="setup" role="tabpanel">
                                 <div class="p-4">
                                     {if $dns_status && $dns_status.status}
                                         {* DNS is configured correctly *}
@@ -258,9 +225,15 @@
 
                                         <h6>What's Next?</h6>
                                         <ul>
-                                            <li>View real-time protection statistics in the <strong>Statistics</strong> tab</li>
-                                            <li>Monitor blocked threats in the <strong>Events Log</strong> tab</li>
-                                            <li>Customize protection rules in the <strong>Settings</strong> tab</li>
+                                            {if $api_key && !$simplified_mode}
+                                                <li>View real-time protection statistics in the <strong>Statistics</strong> tab</li>
+                                                <li>Monitor blocked threats in the <strong>Events Log</strong> tab</li>
+                                                <li>Customize protection rules in the <strong>Settings</strong> tab</li>
+                                            {else}
+                                                <li>Your DNS is correctly pointed to Blackwall protection servers</li>
+                                                <li>All traffic to your domain is now being filtered for malicious bots</li>
+                                                <li>Contact support if you need access to detailed statistics and settings</li>
+                                            {/if}
                                         </ul>
 
                                         {if $dns_status.missing_records && !empty($dns_status.missing_records)}
@@ -433,6 +406,103 @@
                                     {/if}
                                 </div>
                             </div>
+
+                            {* Help Tab *}
+                            <div class="tab-pane fade" id="help" role="tabpanel">
+                                <div class="p-4">
+                                    <h5><i class="fas fa-question-circle me-2"></i>Frequently Asked Questions</h5>
+                                    
+                                    <div class="accordion" id="helpAccordion">
+                                        <div class="card">
+                                            <div class="card-header" id="faq1">
+                                                <h6 class="mb-0">
+                                                    <button class="btn btn-link" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1">
+                                                        What is Blackwall Website Protection?
+                                                    </button>
+                                                </h6>
+                                            </div>
+                                            <div id="collapse1" class="collapse" data-bs-parent="#helpAccordion">
+                                                <div class="card-body">
+                                                    Blackwall is an advanced website protection service that shields your website from malicious bots, scrapers, and automated attacks while allowing legitimate traffic including search engines to access your site normally.
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="card">
+                                            <div class="card-header" id="faq2">
+                                                <h6 class="mb-0">
+                                                    <button class="btn btn-link collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse2">
+                                                        How long does DNS propagation take?
+                                                    </button>
+                                                </h6>
+                                            </div>
+                                            <div id="collapse2" class="collapse" data-bs-parent="#helpAccordion">
+                                                <div class="card-body">
+                                                    DNS changes typically propagate within 1-2 hours, but can take up to 24-48 hours to fully propagate worldwide. You can check the current status on this page.
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="card">
+                                            <div class="card-header" id="faq3">
+                                                <h6 class="mb-0">
+                                                    <button class="btn btn-link collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse3">
+                                                        Will this affect my website's SEO?
+                                                    </button>
+                                                </h6>
+                                            </div>
+                                            <div id="collapse3" class="collapse" data-bs-parent="#helpAccordion">
+                                                <div class="card-body">
+                                                    No, Blackwall is designed to be search engine friendly. Legitimate search engine crawlers from Google, Bing, and other major search engines are automatically allowed through while malicious bots are blocked.
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="card">
+                                            <div class="card-header" id="faq4">
+                                                <h6 class="mb-0">
+                                                    <button class="btn btn-link collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse4">
+                                                        What types of threats does Blackwall block?
+                                                    </button>
+                                                </h6>
+                                            </div>
+                                            <div id="collapse4" class="collapse" data-bs-parent="#helpAccordion">
+                                                <div class="card-body">
+                                                    Blackwall blocks malicious bots, content scrapers, vulnerability scanners, DDoS attacks, spam bots, and other automated threats while allowing legitimate traffic including real users and search engines.
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="card">
+                                            <div class="card-header" id="faq5">
+                                                <h6 class="mb-0">
+                                                    <button class="btn btn-link collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse5">
+                                                        How do I know if the protection is working?
+                                                    </button>
+                                                </h6>
+                                            </div>
+                                            <div id="collapse5" class="collapse" data-bs-parent="#helpAccordion">
+                                                <div class="card-body">
+                                                    Once your DNS is correctly configured (as shown in the DNS Configuration Status section), your website traffic will be filtered through Blackwall's protection servers. {if $api_key}You can view detailed statistics and blocked threats in the Statistics and Events tabs.{else}Contact support for access to detailed analytics.{/if}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-4">
+                                        <h6>Need More Help?</h6>
+                                        <p>If you need additional assistance with your Blackwall protection service:</p>
+                                        <ul>
+                                            <li><a href="/submitticket.php" class="text-primary">Submit a support ticket</a> for technical assistance</li>
+                                            <li>Check the DNS configuration status above to ensure proper setup</li>
+                                            <li>Allow 24-48 hours for DNS changes to fully propagate</li>
+                                            {if $api_key}
+                                                <li>Visit <a href="https://botguard.net/en/docs" target="_blank" rel="noopener">BotGuard Documentation</a> for advanced configuration</li>
+                                            {/if}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -475,19 +545,17 @@ document.addEventListener('DOMContentLoaded', function() {
             jQuery(this).tab('show')
         })
     }
-});
-
-// Refresh iframe function
-function refreshIframe(iframeId) {
-    var iframe = document.getElementById(iframeId);
-    if (iframe) {
-        var container = iframe.closest('.iframe-container');
-        if (container) {
-            container.classList.remove('loaded', 'error');
-        }
-        iframe.src = iframe.src;
+    
+    // Initialize Bootstrap accordion if available
+    if (typeof bootstrap !== 'undefined' && bootstrap.Collapse) {
+        var collapseElementList = [].slice.call(document.querySelectorAll('.collapse'))
+        var collapseList = collapseElementList.map(function (collapseEl) {
+            return new bootstrap.Collapse(collapseEl, {
+                toggle: false
+            })
+        })
     }
-}
+});
 
 // Handle iframe load success
 function handleIframeLoad(iframeId) {
@@ -526,7 +594,7 @@ function handleIframeError(iframeId) {
         // Hide iframe and show error in fallback
         iframe.style.display = 'none';
         if (fallback) {
-            fallback.innerHTML = '<div class="p-4 text-center text-danger"><i class="fas fa-exclamation-triangle fa-3x mb-3"></i><p>Failed to load interface</p><small>Please refresh or <a href="' + iframe.src + '" target="_blank">open in new window</a></small></div>';
+            fallback.innerHTML = '<div class="p-4 text-center text-danger"><i class="fas fa-exclamation-triangle fa-3x mb-3"></i><p>Failed to load interface</p><small>Please <a href="' + iframe.src + '" target="_blank">open in new window</a></small></div>';
             fallback.style.display = 'block';
         }
         
@@ -547,14 +615,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Debug function to check iframe URLs
-function debugIframes() {
-    var iframes = document.querySelectorAll('.iframe-container iframe');
-    iframes.forEach(function(iframe) {
-        console.log('Iframe:', iframe.id, 'URL:', iframe.src);
-    });
-}
-
 // Copy to clipboard function
 function copyToClipboard(elementId) {
     var element = document.getElementById(elementId);
@@ -567,19 +627,35 @@ function copyToClipboard(elementId) {
         navigator.clipboard.writeText(text).then(function() {
             showCopyNotification();
             highlightElement(element);
+        }).catch(function(err) {
+            console.error('Failed to copy to clipboard:', err);
+            fallbackCopyToClipboard(text);
+            showCopyNotification();
+            highlightElement(element);
         });
     } else {
         // Fallback for older browsers
-        var tempInput = document.createElement("input");
-        tempInput.value = text;
-        document.body.appendChild(tempInput);
-        tempInput.select();
-        document.execCommand("copy");
-        document.body.removeChild(tempInput);
-        
+        fallbackCopyToClipboard(text);
         showCopyNotification();
         highlightElement(element);
     }
+}
+
+function fallbackCopyToClipboard(text) {
+    var tempInput = document.createElement("input");
+    tempInput.value = text;
+    tempInput.style.position = "absolute";
+    tempInput.style.left = "-9999px";
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    
+    try {
+        document.execCommand("copy");
+    } catch (err) {
+        console.error('Fallback copy failed:', err);
+    }
+    
+    document.body.removeChild(tempInput);
 }
 
 function showCopyNotification() {
