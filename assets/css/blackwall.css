@@ -1,0 +1,388 @@
+/**
+ * Blackwall WHMCS Module Styles
+ * Version 2.0.0
+ */
+
+/* Main container */
+.blackwall-client-area {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Card enhancements */
+.blackwall-client-area .card {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    border: 1px solid #e3e6f0;
+    transition: box-shadow 0.15s ease-in-out;
+}
+
+.blackwall-client-area .card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.12);
+}
+
+.blackwall-client-area .card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-bottom: none;
+    padding: 1rem 1.25rem;
+}
+
+.blackwall-client-area .card-header h5,
+.blackwall-client-area .card-header h6 {
+    margin: 0;
+    color: white;
+}
+
+/* Iframe container */
+.iframe-container {
+    position: relative;
+    height: 600px;
+    background: #f8f9fa;
+}
+
+.iframe-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: 600;
+}
+
+.iframe-container iframe {
+    width: 100%;
+    height: calc(100% - 60px);
+    border: none;
+    background: white;
+}
+
+/* Tab customizations */
+.blackwall-client-area .nav-tabs {
+    border-bottom: 2px solid #e9ecef;
+}
+
+.blackwall-client-area .nav-tabs .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #6c757d;
+    font-weight: 500;
+    padding: 0.75rem 1rem;
+    transition: all 0.15s ease-in-out;
+}
+
+.blackwall-client-area .nav-tabs .nav-link:hover {
+    border-color: transparent;
+    color: #495057;
+    background: rgba(0,0,0,0.02);
+}
+
+.blackwall-client-area .nav-tabs .nav-link.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+    background: white;
+}
+
+/* Badge styles */
+.badge-success {
+    background-color: #28a745;
+}
+
+.badge-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.badge-primary {
+    background-color: #667eea;
+}
+
+.badge-secondary {
+    background-color: #6c757d;
+}
+
+/* Alert enhancements */
+.blackwall-client-area .alert {
+    border: none;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+}
+
+.blackwall-client-area .alert-success {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    color: #155724;
+    border-left: 4px solid #28a745;
+}
+
+.blackwall-client-area .alert-warning {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    color: #856404;
+    border-left: 4px solid #ffc107;
+}
+
+.blackwall-client-area .alert-info {
+    background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
+    color: #0c5460;
+    border-left: 4px solid #17a2b8;
+}
+
+/* Table enhancements */
+.blackwall-client-area .table {
+    margin-bottom: 0;
+}
+
+.blackwall-client-area .table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.blackwall-client-area .table td {
+    vertical-align: middle;
+    padding: 0.75rem;
+}
+
+.blackwall-client-area .table-bordered {
+    border: 1px solid #e9ecef;
+}
+
+.blackwall-client-area .table-bordered th,
+.blackwall-client-area .table-bordered td {
+    border: 1px solid #e9ecef;
+}
+
+.blackwall-client-area .table-striped tbody tr:nth-of-type(odd) {
+    background-color: rgba(0,0,0,0.02);
+}
+
+.blackwall-client-area .table-dark {
+    background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+}
+
+.blackwall-client-area .table-light {
+    background: #f8f9fa;
+}
+
+/* Code elements */
+.blackwall-client-area code {
+    background: rgba(0,0,0,0.05);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.875rem;
+    color: #e83e8c;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* Button enhancements */
+.blackwall-client-area .btn {
+    border-radius: 6px;
+    font-weight: 500;
+    transition: all 0.15s ease-in-out;
+}
+
+.blackwall-client-area .btn-outline-primary {
+    color: #667eea;
+    border-color: #667eea;
+}
+
+.blackwall-client-area .btn-outline-primary:hover {
+    background-color: #667eea;
+    border-color: #667eea;
+}
+
+.blackwall-client-area .btn-outline-secondary {
+    color: #6c757d;
+    border-color: #6c757d;
+}
+
+.blackwall-client-area .btn-outline-secondary:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+}
+
+.blackwall-client-area .btn-xs {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    line-height: 1.5;
+    border-radius: 0.2rem;
+}
+
+/* Copy notification */
+.copy-notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    z-index: 1050;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    font-weight: 500;
+    animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Icon enhancements */
+.blackwall-client-area .fas {
+    transition: transform 0.15s ease-in-out;
+}
+
+.blackwall-client-area .btn:hover .fas {
+    transform: scale(1.1);
+}
+
+/* Loading states */
+.blackwall-client-area .iframe-container {
+    position: relative;
+}
+
+.blackwall-client-area .iframe-container::before {
+    content: '';
+    position: absolute;
+    top: 60px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #f8f9fa url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100% 100%"><text x="50%" y="50%" font-family="sans-serif" font-size="18" text-anchor="middle" fill="%23666">Loading Blackwall Interface...</text></svg>') center center no-repeat;
+    z-index: 2;
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+.blackwall-client-area .iframe-container.loaded::before {
+    opacity: 0;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.blackwall-client-area .iframe-container.error::before {
+    content: '';
+    background: #f8f9fa;
+    color: #dc3545;
+}
+
+.blackwall-client-area .iframe-container.error::after {
+    content: 'Failed to load interface. Please refresh or contact support.';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    color: #dc3545;
+    font-weight: 500;
+    text-align: center;
+    padding: 20px;
+}
+
+.blackwall-client-area .iframe-container iframe {
+    position: relative;
+    z-index: 1;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .blackwall-client-area .iframe-container {
+        height: 500px;
+    }
+    
+    .blackwall-client-area .nav-tabs .nav-link {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+    
+    .blackwall-client-area .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .blackwall-client-area .btn-xs {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.7rem;
+    }
+    
+    .copy-notification {
+        bottom: 10px;
+        right: 10px;
+        left: 10px;
+        text-align: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .blackwall-client-area .iframe-container {
+        height: 400px;
+    }
+    
+    .blackwall-client-area .card-header h5,
+    .blackwall-client-area .card-header h6 {
+        font-size: 1rem;
+    }
+    
+    .blackwall-client-area .nav-tabs .nav-link {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.8rem;
+    }
+    
+    .blackwall-client-area .nav-tabs .nav-link i {
+        display: none;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .blackwall-client-area .card {
+        background-color: #2d3748;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+    
+    .blackwall-client-area .table {
+        color: #e2e8f0;
+    }
+    
+    .blackwall-client-area .table-striped tbody tr:nth-of-type(odd) {
+        background-color: rgba(255,255,255,0.05);
+    }
+    
+    .blackwall-client-area code {
+        background: rgba(255,255,255,0.1);
+        color: #fbb6ce;
+        border-color: rgba(255,255,255,0.2);
+    }
+    
+    .blackwall-client-area .iframe-header {
+        background: #4a5568;
+        color: #e2e8f0;
+        border-bottom-color: #718096;
+    }
+}
+
+/* Print styles */
+@media print {
+    .blackwall-client-area .nav-tabs,
+    .blackwall-client-area .iframe-container,
+    .blackwall-client-area .btn,
+    .copy-notification {
+        display: none !important;
+    }
+    
+    .blackwall-client-area .tab-pane {
+        display: block !important;
+    }
+}

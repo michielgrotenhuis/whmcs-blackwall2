@@ -1,0 +1,200 @@
+{
+    "schema": "1.0",
+    "type": "whmcs-servers",
+    "name": "blackwall",
+    "license": "proprietary",
+    "category": "provisioning",
+    "version": "2.0.0",
+    "whmcs_version_compat": "8.0.0",
+    "php_version_compat": "7.4.0",
+    "description": {
+        "name": "Blackwall (BotGuard) Website Protection",
+        "tagline": "Advanced bot protection and traffic management for websites",
+        "long": "Blackwall provides comprehensive website protection against malicious bots, crawlers, scrapers, and automated attacks. With GateKeeper integration, it offers real-time threat detection, DDoS protection, and intelligent traffic filtering while ensuring legitimate visitors and search engines have unrestricted access. The service includes detailed analytics, customizable protection rules, and seamless integration with popular CMS platforms.",
+        "features": [
+            "Real-time Bot Detection & Blocking",
+            "Advanced DDoS Protection",
+            "Content Scraping Prevention", 
+            "Search Engine Friendly Filtering",
+            "Performance Optimization",
+            "Detailed Traffic Analytics",
+            "GateKeeper Load Balancer Integration",
+            "Custom Protection Rules",
+            "Multi-Platform Support",
+            "24/7 Threat Monitoring"
+        ]
+    },
+    "logo": {
+        "filename": "assets/img/blackwall-logo.svg"
+    },
+    "support": {
+        "homepage": "https://botguard.net/",
+        "email": "support@botguard.net",
+        "docs_url": "https://botguard.net/en/docs",
+        "forum_url": "https://forum.botguard.net/",
+        "ticket_url": "https://support.botguard.net/"
+    },
+    "authors": [
+        {
+            "name": "Zencommerce India",
+            "homepage": "https://zencommerce.in/",
+            "email": "dev@zencommerce.in",
+            "role": "Primary Developer"
+        },
+        {
+            "name": "BotGuard Team", 
+            "homepage": "https://botguard.net/",
+            "email": "developers@botguard.net",
+            "role": "API Provider"
+        }
+    ],
+    "requirements": {
+        "php_extensions": [
+            "curl",
+            "json",
+            "mbstring",
+            "openssl"
+        ],
+        "whmcs_modules": [],
+        "external_dependencies": [
+            "BotGuard API v2 Access",
+            "GateKeeper API Access (Optional)"
+        ]
+    },
+    "configuration": {
+        "server_module": true,
+        "requires_server": false,
+        "supports_sso": true,
+        "supports_usage_billing": false,
+        "supports_test_connection": true,
+        "supports_metrics": false,
+        "supports_change_password": false,
+        "supports_change_package": false,
+        "default_ports": {
+            "non_ssl": 80,
+            "ssl": 443
+        }
+    },
+    "features": {
+        "provisioning": [
+            "create_account",
+            "suspend_account",
+            "unsuspend_account", 
+            "terminate_account"
+        ],
+        "management": [
+            "client_area_output",
+            "admin_functions",
+            "service_single_sign_on"
+        ],
+        "monitoring": [
+            "test_connection",
+            "dns_check",
+            "status_sync"
+        ]
+    },
+    "templates": {
+        "client_area": [
+            "templates/overview.tpl",
+            "templates/error.tpl"
+        ],
+        "supported_themes": [
+            "twenty-one",
+            "six", 
+            "portal",
+            "blend"
+        ],
+        "bootstrap_version": "4.x/5.x"
+    },
+    "assets": {
+        "css": [
+            "assets/css/blackwall.css"
+        ],
+        "js": [
+            "assets/js/blackwall.js"
+        ],
+        "images": [
+            "assets/img/blackwall-logo.svg"
+        ]
+    },
+    "api": {
+        "botguard": {
+            "version": "2.0",
+            "base_url": "https://apiv2.botguard.net",
+            "authentication": "bearer_token",
+            "rate_limits": {
+                "requests_per_minute": 60,
+                "requests_per_hour": 1000
+            }
+        },
+        "gatekeeper": {
+            "version": "1.0", 
+            "base_url": "https://api.blackwall.klikonline.nl:8443/v1.0",
+            "authentication": "bearer_token",
+            "optional": true
+        }
+    },
+    "changelog": {
+        "2.0.0": {
+            "date": "2025-06-09",
+            "changes": [
+                "Complete rewrite for WHMCS compatibility",
+                "Added GateKeeper integration support",
+                "Implemented modern client area dashboard",
+                "Added real-time DNS configuration checking",
+                "Enhanced security and input validation",
+                "Improved error handling and logging",
+                "Added responsive Bootstrap 4/5 templates",
+                "Implemented Single Sign-On functionality",
+                "Added connection testing capabilities",
+                "Enhanced API library with proper error handling",
+                "Added comprehensive admin functions",
+                "Improved accessibility and user experience"
+            ]
+        },
+        "1.1.0": {
+            "date": "2024-01-15",
+            "changes": [
+                "Initial WISECP module release",
+                "Basic provisioning functionality",
+                "DNS helper integration",
+                "Multi-language support"
+            ]
+        }
+    },
+    "security": {
+        "data_encryption": true,
+        "secure_api_calls": true,
+        "input_validation": true,
+        "csrf_protection": true,
+        "ssl_required": true
+    },
+    "localization": {
+        "supported_languages": [
+            "en",
+            "ru"
+        ],
+        "default_language": "en",
+        "fallback_language": "en"
+    },
+    "custom_fields": {
+        "recommended": [
+            {
+                "name": "Domain",
+                "type": "text",
+                "required": true,
+                "description": "Domain to protect with Blackwall"
+            }
+        ]
+    },
+    "testing": {
+        "unit_tests": false,
+        "integration_tests": false,
+        "manual_testing": true
+    },
+    "deployment": {
+        "installation_notes": "Upload to /modules/servers/blackwall/ directory",
+        "configuration_notes": "Configure API key and server settings in product configuration",
+        "upgrade_notes": "Backup existing configuration before upgrading"
+    }
+}
